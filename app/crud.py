@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from app import models, schemas
 from passlib.context import CryptContext
+from . import models, schemas
 
 pwd_context = CryptContext(schemes=["sha256_crypt"], deprecated="auto")
 
@@ -19,3 +20,28 @@ def verify_password(plain_password, hashed_password):
 
 def get_user_by_email(db, email: str):
     return db.query(models.User).filter(models.User.email == email).first()
+
+def create_task(db: Session, task: schemas.TaskCreate, user_id: int):
+    db_task = models.Task(**task.dict(), owner_id=user_id)
+    db.add(db_task)
+    db.commit()
+    db.refresh(db_task)
+    return db_task
+
+def get_tasks(db: Session, user_id: int):
+    return db.query(models.Task).filter(models.Task.owner_id == user_id).all()
+
+def get_task(db: Session, task_id: int, user_id: int):
+    return db.query(models.Task).filter(models.Task.id == task_id, models.Task.owner_id == user_id).first()
+
+def update_task(db: Session, db_task, task_update: schemas.TaskUpdate):
+    for field, value in task_update.dict(exclude_unset=True).items():
+        setattr(db_task, field, value)
+    db.commit()
+    db.refresh(db_task)
+    return db_task
+
+def delete_task(db: Session, db_task):
+    db.delete(db_task)
+    db.commit()
+    return
