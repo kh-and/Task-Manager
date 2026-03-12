@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 from app import schemas, crud, models
 from app.dependencies import get_db, get_current_user
 
+order: str = "desc"
+
 router = APIRouter(
     prefix="/tasks",
     tags=["tasks"]
@@ -12,9 +14,17 @@ router = APIRouter(
 def create_task(task: schemas.TaskCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     return crud.create_task(db, task, current_user.id)
 
-@router.get("/", response_model=list[schemas.TaskOut])
-def read_tasks(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    return crud.get_tasks(db, current_user.id)
+@router.get("/", response_model=schemas.TaskList)
+def read_tasks(
+    completed: bool | None = None,
+    limit: int = 10,
+    offset: int = 0,
+    order: str = "desc",
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+
+    return crud.get_tasks(db=db, user_id=current_user.id, completed=completed, limit=limit, offset=offset, order=order)
 
 @router.get("/{task_id}", response_model=schemas.TaskOut)
 def read_task(task_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):

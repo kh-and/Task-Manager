@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import desc, asc
 from app import models, schemas
 from passlib.context import CryptContext
 from . import models, schemas
@@ -28,11 +29,26 @@ def create_task(db: Session, task: schemas.TaskCreate, user_id: int):
     db.refresh(db_task)
     return db_task
 
-def get_tasks(db: Session, user_id: int):
-    return db.query(models.Task).filter(models.Task.owner_id == user_id).all()
+def get_tasks(db: Session, user_id: int, completed: bool | None = None, limit: int = 10, offset: int = 0, order: str = "desc"):
 
-def get_task(db: Session, task_id: int, user_id: int):
-    return db.query(models.Task).filter(models.Task.id == task_id, models.Task.owner_id == user_id).first()
+    query = db.query(models.Task).filter(models.Task.owner_id == user_id)
+
+    if completed is not None:
+        query = query.filter(models.Task.completed == completed)
+
+    if order == "desc":
+        query = query.order_by(desc(models.Task.created_at))
+    else:
+        query = query.order_by(asc(models.Task.created_at))
+
+    total = query.count()
+
+    tasks = query.offset(offset).limit(limit).all()
+
+    return {
+        "total": total,
+        "items": tasks
+    }
 
 def update_task(db: Session, db_task, task_update: schemas.TaskUpdate):
     for field, value in task_update.dict(exclude_unset=True).items():

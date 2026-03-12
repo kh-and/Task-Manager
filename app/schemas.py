@@ -32,3 +32,10 @@ class TaskOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+class TaskList(BaseModel):
+    total: int
+    items: list[TaskOut]
+
+    class Config:
+        from_attributes = True
